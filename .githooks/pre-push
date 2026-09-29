@@ -1,0 +1,84 @@
+#!/bin/bash
+# Pre-push gate: run scripts/scrub-check.py on the diff that's about to be pushed.
+# The principle: once a push lands and a PR is opened, the content is public-record
+# forever. We catch leaks here so they never reach GitHub.
+#
+# Bypass entirely with SCRUB_SKIP=1 (logged). Use sparingly.
+
+set -u
+
+if [ "${SCRUB_SKIP:-}" = "1" ]; then
+  echo "[scrub-check] SCRUB_SKIP=1 — bypassing pre-push gate." >&2
+  exit 0
+fi
+
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
+script="$repo_root/scripts/scrub-check.py"
+
+# Not installed in this repo — silently no-op so peer repos without the script aren't blocked.
+[ ! -f "$script" ] && exit 0
+
+# Prove the gate can still see BEFORE trusting it on this push. The failure this
+# guards against is not a wrong flag, it's a scanner that resolves no patterns
+# and exits 0 — which looks exactly like a clean push. CI never runs this hook,
+# so the check has to live here too.
+selftest="$repo_root/scripts/scrub-selftest.py"
+if [ -f "$selftest" ]; then
+  if ! python3 "$selftest" > /tmp/scrub-selftest.$$ 2>&1; then
+    cat /tmp/scrub-selftest.$$ >&2
+    rm -f /tmp/scrub-selftest.$$
+    echo "[scrub-check] self-test failed — the leak gate is not working. Push blocked." >&2
+    exit 1
+  fi
+  rm -f /tmp/scrub-selftest.$$
+fi
+
+ZERO_SHA="0000000000000000000000000000000000000000"
+exit_code=0
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  # Skip deletes
+  [ "$local_sha" = "$ZERO_SHA" ] && continue
+
+  # Three dots, not two, and the difference is the whole correctness of this
+  # gate. `A..B` asks "what separates these two tips", which on a branch that
+  # is BEHIND its base also includes the INVERSE of every commit the base has
+  # and the branch lacks: the base's newer content shows up as `-` lines and
+  # the older content it replaced comes back as `+` lines. The scanner then
+  # reads content this push does not introduce — content that is already
+  # public on the base — and blocks on it. `A...B` diffs from the merge base,
+  # so it is exactly what the branch adds, which is what "about to become
+  # public" means.
+  #
+  # Measured 2026-09-10: a branch three commits behind main scanned as 3 files
+  # / 29 insertions / 161 deletions two-dot, against 6 files / 63 insertions /
+  # 4 deletions three-dot. The semantic pass flagged a path in a file the
+  # branch never touched, and two pushes were blocked on it.
+  if [ "$remote_sha" = "$ZERO_SHA" ]; then
+    # New branch — diff against the remote's default branch.
+    default_branch="$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's|^origin/||')"
+    default_branch="${default_branch:-main}"
+    range="origin/${default_branch}...${local_sha}"
+  else
+    range="${remote_sha}...${local_sha}"
+  fi
+
+  if ! python3 "$script" --diff-range "$range"; then
+    exit_code=1
+    continue
+  fi
+
+  # Semantic pass. The regex gate only knows names someone already thought to
+  # list; this one catches unlisted real names, other people's project names and
+  # personal specifics. It was written to run here and never wired in, so for
+  # months the only pass that could catch an UNKNOWN name never ran.
+  # Runs only after the regex gate passes, so a blocked push isn't scanned twice.
+  haiku="$repo_root/scripts/scrub-haiku.py"
+  if [ -f "$haiku" ] && [ "${SCRUB_SKIP_HAIKU:-}" != "1" ]; then
+    if ! python3 "$haiku" --diff-range "$range"; then
+      exit_code=1
+    fi
+  fi
+done
+
+exit "$exit_code"

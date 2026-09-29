@@ -1,0 +1,56 @@
+# ~/.config/weekly-review/identity.yaml
+#
+# Who the data subject is. Every hours figure this tool publishes is "time THIS
+# person spent", so an empty or wrong identity is the difference between a
+# number you can bill and a number that includes somebody else's afternoon.
+#
+# Copy to ~/.config/weekly-review/ and edit. Nothing here is checked in.
+
+identity:
+  # GitHub login(s) that count as you, for authored-PR attribution.
+  # Env override: WEEKLY_REVIEW_GITHUB_USER (comma-separated).
+  github_users:
+    - your-github-login
+
+  # Display names the workspace renders you under, lowercased, matched as
+  # SUBSTRINGS. One person usually has several: a store may render the same
+  # human as "Alex", "Alex Rivera" and "arivera" depending on how they signed
+  # in. List every one — a single fragment is the bug this file exists to fix
+  # (a one-word allowlist silently dropped 29% of the subject's own comments
+  # for a month, because it did not match their main handle).
+  #
+  # LEAVING THIS EMPTY MEANS NO NAME FILTER: every non-agent person in the
+  # store counts as you, which on any shared document is wrong. The run warns.
+  #
+  # Env override: WEEKLY_REVIEW_WORKSPACE_NAMES (comma-separated).
+  workspace_names:
+    - your name
+    - yourhandle
+
+  # Dated windows in which UNNAMED, UNOWNED activity counts as yours.
+  #
+  # Some stores mint a generated handle ("Anon-tnd4hs") for a browser they
+  # cannot identify. That is you reading your own docs signed out — or it is
+  # somebody you shared a doc with, and nothing in the record tells them apart.
+  # An era says "in this window it was me", and it needs a REASON that is a
+  # fact about the store, not a wish about the hours.
+  #
+  # Both edges are hard. Do not widen an era to recover time; the whole value
+  # of the exception is that it has a defensible end.
+  #
+  # Omit this key entirely to count no anonymous activity as yours — the safest
+  # setting, and the right default if you cannot name a reason.
+  anon_eras: []
+    # - start: 2026-06-29
+    #   end: 2026-08-10        # inclusive
+    #   reason: >
+    #     the workspace did not record my name on browser handles until
+    #     2026-08-10; anonymous reading stops on that date because the store
+    #     started resolving it, not because the reading stopped.
+
+  # Regex (case-insensitive, on the lowercased name) marking a GENERATED handle
+  # rather than a real name. A generated handle falls under the era rule; a real
+  # name that is not in workspace_names is somebody else, era or no era — which
+  # is how a named collaborator is excluded without listing their name here.
+  # Default: ^anon[-_]
+  # anon_name_pattern: '^anon[-_]'

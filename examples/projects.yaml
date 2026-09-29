@@ -1,0 +1,115 @@
+# Example projects.yaml — copy to ~/.config/weekly-review/projects.yaml and
+# replace these invented projects with your own.
+#
+# Every event (transcript turn, commit, PR, review doc) is routed to the FIRST
+# project whose cwd_patterns match its working directory, so order matters:
+# put excluded harnesses that live inside another repo's worktree BEFORE the
+# repo they live inside of, or the general pattern catches them first.
+#
+# cwd_patterns are fnmatch globs. Cover every place a checkout can live:
+#   /Users/*/dev/<repo>                       the main checkout
+#   /Users/*/dev/<repo>/**                    anything under it
+#   /Users/*/dev/<repo>--claude-worktrees-*   sibling worktrees (dash-dash prefix)
+#   /Users/*/dev/<repo>/.claude/worktrees/*   nested worktrees (inside the repo)
+# Missing either worktree convention routes that work to the wrong project.
+#
+# Optional per-project fields:
+#   exclude: true      — drop this project's events entirely (automated harnesses,
+#                        shared agents you can't attribute to yourself)
+#   client: <name>     — track this project's time against a client (e.g. "Client A");
+#                        enables per-client rollups. Omit for personal/unbilled.
+#   billable: false    — with client set: volunteer/pro-bono engagement. Hours
+#                        roll up per-client but display as unbilled, never revenue.
+#   repos:             — GitHub repos (owner/name) to pull PR artifacts from.
+#     - org/app          Overrides the auto-detected origin remote; needed when
+#     - org/plugins      one project's work spans several repos.
+#   ignore_task: true  — harness/eval project: agent-only events that never
+#                        attach to a task are expected, so the attachment audit
+#                        leaves them out of its denominator. Excludes nothing
+#                        from the metrics.
+#   diffstat_exclude:  — path globs whose lines are not authored work (checked-in
+#     - data/*           data, benchmark output, generated files). Matching files
+#     - "*.lock"         leave each commit's diffstat before estimation; `*`
+#                        crosses directories. The excluded bulk is still shown
+#                        beside the commit, marked as not to be priced.
+#   doc_keywords:      — lowercase substrings that route a review doc to this
+#     - my-app           project when nothing structural (board, source path,
+#     - myapp            doc root) resolves it. Matched against the doc's
+#                        lowercased source URL, id, title and board name. Last
+#                        resort only; first project in config order wins.
+projects:
+# An automated eval harness that runs inside my-app's worktrees. Listed FIRST
+# so its patterns win over my-app's general ones below.
+- slug: benchmark-harness
+  exclude: true
+  ignore_task: true
+  cwd_patterns:
+  - /Users/*/dev/my-app--claude-worktrees-benchmark-harness
+  - /Users/*/dev/my-app--claude-worktrees-benchmark-harness/**
+  - /Users/*/dev/my-app/.claude/worktrees/benchmark-harness
+  - /Users/*/dev/my-app/.claude/worktrees/benchmark-harness/**
+  - /Users/*/dev/benchmark-harness
+  - /Users/*/dev/benchmark-harness/**
+- slug: my-app
+  repos:
+  - me/my-app
+  - me/my-app-plugins
+  diffstat_exclude:
+  - data/*
+  - "*.lock"
+  doc_keywords:
+  - my-app
+  - myapp
+  cwd_patterns:
+  - /Users/*/dev/my-app
+  - /Users/*/dev/my-app/**
+  - /Users/*/dev/my-app--claude-worktrees-*
+  - /Users/*/dev/my-app--claude-worktrees-*/**
+  - /Users/*/dev/my-app/.claude/worktrees/*
+  - /Users/*/dev/my-app/.claude/worktrees/*/**
+  - /Users/*/dev/my-app-plugins
+  - /Users/*/dev/my-app-plugins/**
+# A volunteer engagement: hours roll up under the client but never as revenue.
+- slug: client-a
+  client: Client A
+  billable: false
+  repos:
+  - client-a-org/app
+  - client-a-org/wrapper-project
+  doc_keywords:
+  - client a
+  - client-a
+  cwd_patterns:
+  - /Users/*/dev/client-a
+  - /Users/*/dev/client-a/**
+  - /Users/*/dev/client-a--claude-worktrees-*
+  - /Users/*/dev/client-a--claude-worktrees-*/**
+  - /Users/*/dev/client-a/.claude/worktrees/*
+  - /Users/*/dev/client-a/.claude/worktrees/*/**
+# A paid engagement (billable defaults to true when client is set).
+- slug: client-b
+  client: Client B
+  cwd_patterns:
+  - /Users/*/dev/client-b
+  - /Users/*/dev/client-b/**
+  - /Users/*/dev/client-b--claude-worktrees-*
+  - /Users/*/dev/client-b--claude-worktrees-*/**
+# NOTE: `notes` was the early name of what became the notes-repo checkout.
+# Same work — both paths route to one slug.
+- slug: notes-repo
+  doc_keywords:
+  - notes-repo
+  - research notes
+  cwd_patterns:
+  - /Users/*/dev/notes-repo
+  - /Users/*/dev/notes-repo/**
+  - /Users/*/dev/notes
+  - /Users/*/dev/notes/**
+- slug: weekly-review
+  cwd_patterns:
+  - /Users/*/dev/weekly-review
+  - /Users/*/dev/weekly-review/**
+  - /Users/*/dev/weekly-review--claude-worktrees-*
+  - /Users/*/dev/weekly-review--claude-worktrees-*/**
+  - /Users/*/dev/weekly-review/.claude/worktrees/*
+  - /Users/*/dev/weekly-review/.claude/worktrees/*/**

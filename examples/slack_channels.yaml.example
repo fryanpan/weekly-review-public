@@ -1,0 +1,14 @@
+# Slack channel ID → project slug mapping for the slack extractor.
+# Channels not in this map route to "unknown" in events.
+#
+# Slugs must match the `slug:` entries in projects.yaml. Several channels can
+# map to one slug (a staging channel, a decisions channel, a legacy channel).
+
+C0EXAMPLE001: my-app
+C0EXAMPLE002: my-app                # staging-my-app
+C0EXAMPLE003: my-app                # my-app-decisions
+C0EXAMPLE004: client-a
+C0EXAMPLE005: client-a-app          # legacy channel name — same project
+C0EXAMPLE006: notes-repo
+C0EXAMPLE007: notes-repo            # daily-digest
+C0EXAMPLE008: finance-tool

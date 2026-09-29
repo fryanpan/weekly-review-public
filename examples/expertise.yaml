@@ -1,0 +1,9 @@
+# ~/.config/weekly-review/expertise.yaml
+# Self-declared expertise — seeds the bryan_domain_expertise classifier.
+# Values: expert, competent, learning.
+domains:
+  "backend / python / api design": expert
+  "frontend / react / ux": competent
+  "data / pandas / analysis": expert
+  "machine learning / model training": learning
+  "devops / kubernetes / cloud": competent

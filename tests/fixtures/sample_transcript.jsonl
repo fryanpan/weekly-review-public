@@ -1,0 +1,6 @@
+{"type":"user","timestamp":"2026-04-15T10:00:00.000Z","sessionId":"sess-a","cwd":"/Users/me/dev/weekly-review","message":{"role":"user","content":"Let's start with a Python package skeleton."}}
+{"type":"assistant","timestamp":"2026-04-15T10:00:15.000Z","sessionId":"sess-a","cwd":"/Users/me/dev/weekly-review","message":{"role":"assistant","model":"claude-opus-4-7","content":[{"type":"text","text":"I'll create pyproject.toml and src/."}]}}
+{"type":"user","timestamp":"2026-04-15T10:03:30.000Z","sessionId":"sess-a","cwd":"/Users/me/dev/weekly-review","message":{"role":"user","content":"<system-reminder>\nRemember to use TaskWrite.\n</system-reminder>"}}
+{"type":"user","timestamp":"2026-04-15T10:04:05.000Z","sessionId":"sess-a","cwd":"/Users/me/dev/weekly-review","message":{"role":"user","content":"OK, now add tests."}}
+{"type":"assistant","timestamp":"2026-04-15T10:04:22.000Z","sessionId":"sess-a","cwd":"/Users/me/dev/weekly-review","message":{"role":"assistant","model":"claude-opus-4-7","content":[{"type":"tool_use","id":"t1","name":"Write","input":{"file_path":"tests/test_x.py"}}]}}
+{"type":"user","timestamp":"2026-04-15T10:04:25.000Z","sessionId":"sess-a","cwd":"/Users/me/dev/weekly-review","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"t1","content":"File created at tests/test_x.py","is_error":false}]}}

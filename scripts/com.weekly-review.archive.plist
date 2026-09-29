@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- LaunchAgent: hourly archive of ~/.claude/projects/ to weekly-review's archive dir.
+
+     WHY IT RUNS BUN FROM THE BOOT DISK. Under launchd, Apple-signed binaries (/bin/bash,
+     /bin/ls, /usr/bin/rsync) are denied every operation on a second volume, and ~/.claude,
+     ~/.local and ~/dev all resolve there. The bash version of this job died at exec three
+     times (2026-05-06, 2026-08-17, 2026-09-11), each time silently at exit 126. Granting
+     /bin/bash Full Disk Access does not fix it, and neither does moving the .sh off the
+     volume: rsync is denied next. A launchd process reaches that volume only when its OWN
+     executable is on the boot disk and holds Full Disk Access, so this runs the boot-disk
+     bun and archive-transcripts.ts does every file operation itself.
+
+     Install (paths must be absolute — launchd does not expand $HOME outside a shell):
+       mkdir -p /opt/fleet/weekly-review
+       cp scripts/archive-transcripts.ts /opt/fleet/weekly-review/
+       sed "s|__HOME__|$HOME|g" scripts/com.weekly-review.archive.plist \
+         > ~/Library/LaunchAgents/com.weekly-review.archive.plist
+       launchctl bootout gui/$(id -u)/com.weekly-review.archive 2>/dev/null
+       launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.weekly-review.archive.plist
+     Verify: tail ~/Library/Logs/weekly-review-archive.err.log is empty, and
+             tail ~/dev/weekly-review-transcripts/archive.log ends in "done".
+     Editing the repo copy of the .ts changes nothing until it is copied to /opt/fleet again.
+
+     Uninstall: launchctl bootout gui/$(id -u)/com.weekly-review.archive
+                rm ~/Library/LaunchAgents/com.weekly-review.archive.plist
+
+     The label was com.<name>.weekly-review.archive before 2026-09-18. If an agent
+     under an older label is still loaded (launchctl list | grep weekly-review), boot
+     it out and delete its plist too, or two archivers run every hour.
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.weekly-review.archive</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>__HOME__/Library/Application Support/claude-workspaces/bin/bun</string>
+        <string>/opt/fleet/weekly-review/archive-transcripts.ts</string>
+    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>HOME</key>
+        <string>__HOME__</string>
+    </dict>
+
+    <!-- Run at load, then every hour. -->
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>StartInterval</key>
+    <integer>3600</integer>
+
+    <!-- ~/Library/Logs is on the boot disk, so a failure is still recorded when the
+         Data volume is the thing that is unreachable. -->
+    <key>StandardOutPath</key>
+    <string>__HOME__/Library/Logs/weekly-review-archive.out.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>__HOME__/Library/Logs/weekly-review-archive.err.log</string>
+</dict>
+</plist>
